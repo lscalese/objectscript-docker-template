@@ -18,12 +18,25 @@ RUN chmod +x /irissession.sh
 USER irisowner
 
 COPY  Installer.cls .
+COPY  %REST.Parameter.cls .
 COPY  src src
 SHELL ["/irissession.sh"]
 
 RUN \
+  Set ns = $namespace \
+  zn "%SYS" \
+  Set irislibdir = "/usr/irissys/mgr/irislib/" \
+  Set db=##Class(SYS.Database).%OpenId(irislibdir) \
+  Set db.ReadOnly = 0 \
+  Do db.%Save() \
+  Kill db \
+  Set sc = $SYSTEM.OBJ.Load("%REST.Parameter.cls", "ck") \
+  Write "Install fix REST ",$SYSTEM.Status.GetOneErrorText(sc) \
+  Set db=##Class(SYS.Database).%OpenId(irislibdir) \
+  Set db.ReadOnly = 1 \
+  Do db.%Save() \
+  zn ns \
   do $SYSTEM.OBJ.Load("Installer.cls", "ck") \
   set sc = ##class(App.Installer).setup() 
-
 # bringing the standard shell back
 SHELL ["/bin/bash", "-c"]
